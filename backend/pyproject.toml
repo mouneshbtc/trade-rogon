@@ -1,0 +1,68 @@
+[project]
+name = "trade-rogon-backend"
+version = "0.1.0"
+description = "Trade Narrative Engine backend — NQ/ES ICT reasoning system"
+requires-python = ">=3.12"
+dependencies = [
+    # Web framework
+    "fastapi[standard]>=0.115.0",
+    # ORM + migrations
+    "sqlalchemy[asyncio]>=2.0",
+    "alembic>=1.13",
+    "asyncpg>=0.30",        # async Postgres driver for SQLAlchemy
+    "psycopg2-binary>=2.9", # sync driver used only by Alembic env.py
+    # Config / validation
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    # Market data
+    "databento>=0.49",
+    # Cache / event bus transport
+    "redis[hiredis]>=5.0",
+    # Numerics
+    "pandas>=2.2",
+    "numpy>=1.26",
+    # Observability
+    "sentry-sdk[fastapi]>=2.0",
+    "structlog>=24.0",
+    "httpx>=0.28",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-env>=1.1",
+    "ruff>=0.9",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+env = [
+    "DATABASE_URL=postgresql://traderogon:traderogon@localhost:5432/traderogon_test",
+    "REDIS_URL=redis://localhost:6379/1",
+    "ENV=test",
+    "SENTRY_DSN=",
+    "DATABENTO_API_KEY=",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+ignore_missing_imports = true

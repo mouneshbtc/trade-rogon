@@ -1,0 +1,59 @@
+name: backend-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: traderogon
+          POSTGRES_PASSWORD: traderogon
+          POSTGRES_DB: traderogon
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U traderogon"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://traderogon:traderogon@localhost:5432/traderogon
+      REDIS_URL: redis://localhost:6379/1
+      ENV: test
+      SENTRY_DSN: ""
+      DATABENTO_API_KEY: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-asyncio pytest-env ruff
+
+      - name: Lint
+        working-directory: backend
+        run: ruff check app tests alembic
+
+      - name: Run migrations
+        working-directory: backend
+        run: alembic upgrade head
+
+      - name: Run tests
+        working-directory: backend
+        run: pytest -v
