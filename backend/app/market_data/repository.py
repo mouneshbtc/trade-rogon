@@ -64,6 +64,10 @@ class BarRepository:
         )
         await db.execute(stmt)
         await db.flush()
+        # The bulk upsert bypasses the ORM unit-of-work, so any Bar objects
+        # already in the identity map would otherwise keep stale attributes
+        # on subsequent ORM reads (e.g. a replayed bar's revised values).
+        db.expire_all()
         return len(rows)
 
     async def get_range(
