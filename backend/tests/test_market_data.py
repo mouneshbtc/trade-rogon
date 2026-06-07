@@ -14,8 +14,6 @@ from app.market_data.aggregator import BarAggregator
 from app.market_data.repository import BarRepository, InstrumentRepository
 from app.schemas.market_data import NormalizedBar
 
-pytestmark = pytest.mark.asyncio
-
 
 def _bar(ts: datetime, *, o=100.0, h=101.0, low=99.0, c=100.5, v=10.0) -> NormalizedBar:
     return NormalizedBar(
@@ -97,6 +95,7 @@ def test_aggregate_returns_empty_for_no_bars(aggregator):
     assert aggregator.aggregate([], "5m") == []
 
 
+@pytest.mark.asyncio
 async def test_upsert_many_is_idempotent(db):
     instruments = InstrumentRepository()
     bars_repo = BarRepository()

@@ -17,8 +17,6 @@ from app.narrative_engine.pipeline import NarrativePipeline
 from app.narrative_engine.stage import NarrativeStage
 from app.schemas.narrative import NarrativeContext, StageResult
 
-pytestmark = pytest.mark.asyncio
-
 
 class _RecordingStage(NarrativeStage):
     """Always passes; records that it ran and what context it was handed."""
@@ -72,6 +70,7 @@ class _MisbehavingStage(NarrativeStage):
         return StageResult(stage_name="someone_else", sequence_order=999, passed=True, output={})
 
 
+@pytest.mark.asyncio
 async def test_pipeline_runs_stages_in_strict_sequence_order(db):
     calls: list[str] = []
     # Registered out of order — the pipeline must still execute by sequence_order.
@@ -90,6 +89,7 @@ async def test_pipeline_runs_stages_in_strict_sequence_order(db):
     assert [r.stage_name for r in result.context.results] == ["bias", "liquidity", "displacement"]
 
 
+@pytest.mark.asyncio
 async def test_pipeline_short_circuits_on_first_rejection(db):
     calls: list[str] = []
     stages = [
@@ -108,6 +108,7 @@ async def test_pipeline_short_circuits_on_first_rejection(db):
     assert [r.stage_name for r in result.context.results] == ["bias", "liquidity"]
 
 
+@pytest.mark.asyncio
 async def test_pipeline_passes_accumulated_context_to_each_stage(db):
     calls: list[str] = []
     stages = [
@@ -123,6 +124,7 @@ async def test_pipeline_passes_accumulated_context_to_each_stage(db):
     assert seen_counts == [0, 1, 2]  # each stage saw exactly the prior stages' results
 
 
+@pytest.mark.asyncio
 async def test_pipeline_converts_concept_not_defined_error_to_inconclusive_rejection(db):
     stages = [
         _RecordingStage("bias", 1, []),
@@ -141,6 +143,7 @@ async def test_pipeline_converts_concept_not_defined_error_to_inconclusive_rejec
     assert "order_block" in failed.output["reasons"][0]
 
 
+@pytest.mark.asyncio
 async def test_pipeline_converts_unexpected_exception_to_inconclusive_rejection(db):
     stages = [
         _RecordingStage("bias", 1, []),
@@ -156,6 +159,7 @@ async def test_pipeline_converts_unexpected_exception_to_inconclusive_rejection(
     assert failed.inconclusive is True
 
 
+@pytest.mark.asyncio
 async def test_pipeline_rejects_duplicate_sequence_orders_at_construction():
     with pytest.raises(ValueError):
         NarrativePipeline(
@@ -166,6 +170,7 @@ async def test_pipeline_rejects_duplicate_sequence_orders_at_construction():
         )
 
 
+@pytest.mark.asyncio
 async def test_pipeline_rejects_a_stage_that_speaks_for_another_stage(db):
     pipeline = NarrativePipeline([_MisbehavingStage("bias", 1)])
 
@@ -173,6 +178,7 @@ async def test_pipeline_rejects_a_stage_that_speaks_for_another_stage(db):
         await pipeline.run(db, uuid4())
 
 
+@pytest.mark.asyncio
 async def test_pipeline_with_no_stages_produces_empty_trade_idea(db):
     pipeline = NarrativePipeline([])
 
