@@ -111,8 +111,18 @@ class ExecutionModelService:
         evaluated_at = datetime.now(tz=UTC)
         facts: list[EvaluationFact] = []
 
+        # Two raids (e.g. against a PDH and an EQH pool) can land on the same
+        # bar with the same reversal direction, which `uq_execution_model_evaluation`
+        # treats as one row. Keep the first (earliest-ordered) raid per
+        # (ts, direction) — the resulting fact would be identical regardless.
+        seen_candidates: set[tuple[datetime, str]] = set()
+
         for raid, pool_type in raids_with_type:
             reversal_dir = "bearish" if pool_type in _HIGH_POOL_TYPES else "bullish"
+            candidate_key = (raid.ts, reversal_dir)
+            if candidate_key in seen_candidates:
+                continue
+            seen_candidates.add(candidate_key)
             raid_ctx = RaidContext(id=raid.id, ts=raid.ts, reversal_direction=reversal_dir)
 
             fact = evaluate_setup(
