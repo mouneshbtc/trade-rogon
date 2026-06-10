@@ -5,9 +5,11 @@ indicator signals — it reasons through a fixed chain (HTF narrative → daily 
 draw on liquidity → manipulation → displacement → PD arrays → LTF confirmation →
 entry) and produces fully-explained trade ideas, or fully-explained rejections.
 
-See `docs/architecture.md` for the system design and `docs/roadmap.md` for the
-build sequence. ICT concept definitions are trader-defined and versioned — see
-`docs/concept_definitions/`.
+See `docs/architecture.md` for the system design, `docs/roadmap.md` for the build
+sequence, and `docs/current_state.md` for a snapshot of what is implemented today.
+ICT concept definitions are trader-defined and versioned — see
+`docs/concept_definitions/` (`market_structure.md`, `liquidity.md`, `displacement.md`,
+`smt.md`, `fvg.md`, `daily_fvg_sweep_reversal.md`).
 
 ## Layout
 
