@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
@@ -8,10 +9,25 @@ from app.market_structure.repository import StructuralEventRepository
 from app.models.market_data import Instrument
 from app.models.market_structure import SWING_HIGH, SWING_LOW
 from app.models.smt import SMTDivergenceEvent
-from app.smt.detector import detect_smt
+from app.smt.detector import SMTDivergenceFact, detect_smt
 from app.smt.repository import SMTRepository
 
 _CONCEPT_NAME = "smt"
+
+
+def _dedup_events(events: list[SMTDivergenceFact]) -> list[SMTDivergenceFact]:
+    """Collapse events sharing (instrument_a_id, instrument_b_id, timeframe, ts, direction).
+
+    `detect_smt` runs an A-leads pass and a B-leads pass per direction; both can
+    resolve to the same divergence ts (max(anchor.ts, companion.ts) + bar_width)
+    for the same direction, which `uq_smt_divergence_event` treats as one row.
+    Keep the first (earliest-detected) fact for each key.
+    """
+    seen: dict[tuple[uuid.UUID, uuid.UUID, str, datetime, str], SMTDivergenceFact] = {}
+    for event in events:
+        key = (event.instrument_a_id, event.instrument_b_id, event.timeframe, event.ts, event.direction)
+        seen.setdefault(key, event)
+    return list(seen.values())
 
 # Static bar-width map — used for confirmation-ts computation and proximity delta.
 _TIMEFRAME_TO_TIMEDELTA: dict[str, timedelta] = {
@@ -128,6 +144,7 @@ class SMTService:
             bar_width=bar_width,
             rules=rules,
         )
+        detected = _dedup_events(detected)
 
         # ── Persist ───────────────────────────────────────────────────────────
         if replace:
