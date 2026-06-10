@@ -47,15 +47,19 @@ class Settings(BaseSettings):
         elif "+asyncpg" not in url:
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-        # asyncpg's connect() accepts `ssl=`, not `sslmode=`. Neon's connection
-        # strings always include `?sslmode=require`, which psycopg2 (used for
-        # `sync_database_url`/Alembic) accepts natively but asyncpg rejects with
-        # a TypeError. Rename the param, preserving its value, for the async URL only.
+        # asyncpg's connect() accepts `ssl=`, not `sslmode=`, and has no
+        # `channel_binding` parameter at all. Neon's connection strings include
+        # `?sslmode=require&channel_binding=require`, which psycopg2 (used for
+        # `sync_database_url`/Alembic) accepts natively via libpq but asyncpg
+        # rejects both with a TypeError. Rename `sslmode`->`ssl` (preserving its
+        # value) and drop `channel_binding`, for the async URL only.
         split = urlsplit(url)
         query = parse_qsl(split.query, keep_blank_values=True)
-        if any(key == "sslmode" for key, _ in query):
-            query = [("ssl" if key == "sslmode" else key, value) for key, value in query]
-            split = split._replace(query=urlencode(query))
+        new_query = [
+            ("ssl" if key == "sslmode" else key, value) for key, value in query if key != "channel_binding"
+        ]
+        if new_query != query:
+            split = split._replace(query=urlencode(new_query))
             url = urlunsplit(split)
 
         return url
