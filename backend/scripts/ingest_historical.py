@@ -21,7 +21,7 @@ used by the execution model.
 import argparse
 import asyncio
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import structlog
@@ -40,6 +40,11 @@ logger = structlog.get_logger(__name__)
 
 SUPPORTED_SYMBOLS = ("NQ.c.0", "ES.c.0")
 
+# Databento's GLBX.MDP3 dataset lags real time by a short, variable margin
+# (observed ~10 minutes); requesting an `end` past the available range raises
+# a 422 from the API. Stay safely behind "now".
+_DATA_AVAILABILITY_LAG = timedelta(minutes=30)
+
 
 def _month_chunks(start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:
     """Split [start, end) into calendar-month-aligned chunks."""
@@ -55,7 +60,7 @@ def _month_chunks(start: datetime, end: datetime) -> list[tuple[datetime, dateti
 
 
 async def ingest(symbol: str, months: int) -> None:
-    end = datetime.now(UTC).replace(second=0, microsecond=0)
+    end = datetime.now(UTC).replace(second=0, microsecond=0) - _DATA_AVAILABILITY_LAG
     start = shift_months(end, -months)
     chunks = _month_chunks(start, end)
 
