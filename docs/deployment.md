@@ -46,14 +46,15 @@ Stack:
 ## 2. Render setup (backend)
 
 1. Create a Render account/project at https://render.com.
-2. **New → Blueprint** → connect this repository. Render detects `backend/render.yaml`
-   and proposes a `trade-rogon-backend` web service. (Alternatively: **New → Web Service**
-   → select this repo and configure manually using the values below — Blueprint is
-   recommended since `render.yaml` already encodes them.)
-3. Because this is a monorepo, `render.yaml` sets **Root Directory** to `backend`
-   — confirm this in the service settings if creating manually
-   (Settings → Build & Deploy → Root Directory = `backend`).
-4. `backend/render.yaml` configures:
+2. **New → Blueprint** → connect this repository. Render reads `render.yaml` from the
+   **repo root** (Blueprint files are not detected inside subdirectories) and proposes a
+   `trade-rogon-backend` web service. (Alternatively: **New → Web Service** → select this
+   repo and configure manually using the values below — Blueprint is recommended since
+   `render.yaml` already encodes them.)
+3. Because this is a monorepo, `render.yaml`'s `rootDir: backend` makes the build/start
+   commands run from `backend/` — confirm this in the service settings if creating
+   manually (Settings → Build & Deploy → Root Directory = `backend`).
+4. `render.yaml` configures:
    - **Runtime:** Python (`PYTHON_VERSION=3.12.13`, matching `requires-python = ">=3.12"`
      in `backend/pyproject.toml`)
    - **Build command:** `pip install --upgrade pip && pip install -e .` — installs the
@@ -139,7 +140,7 @@ not configured here per "do not deploy automatically").
 
 ## 5. Environment variables reference
 
-### Backend (Render) — `backend/app/config.py` / `backend/render.yaml`
+### Backend (Render) — `backend/app/config.py` / `render.yaml`
 
 | Variable | Required | Example / Default | Notes |
 |---|---|---|---|
@@ -167,7 +168,7 @@ not configured here per "do not deploy automatically").
 ## 6. Production checklist
 
 - [ ] Neon project created; `DATABASE_URL` copied (plain `postgresql://`, includes `sslmode=require`)
-- [ ] Render Blueprint deployed from `backend/render.yaml` with **Root Directory = `backend`**
+- [ ] Render Blueprint deployed from `render.yaml` (repo root, `rootDir: backend`)
 - [ ] Render env vars set: `DATABASE_URL`, `CORS_ORIGINS`, `APP_BASE_URL`,
       `DATABENTO_API_KEY`, `SENTRY_DSN` (optional) — `ENV`, symbols/dataset, and
       `PYTHON_VERSION` already come from `render.yaml`
