@@ -31,7 +31,7 @@ const DIRECTION_OPTIONS: { value: Direction | "all"; label: string }[] = [
 ];
 
 export default function SetupsPage() {
-  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ");
+  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ.c.0");
   const [timeframe, setTimeframe] = useState<Timeframe>("15m");
   const [direction, setDirection] = useState<Direction | "all">("all");
   const [status, setStatus] = useState<TradeSetupStatus | "all">("all");

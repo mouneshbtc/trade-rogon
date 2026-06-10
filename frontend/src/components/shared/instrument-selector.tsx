@@ -2,8 +2,14 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export const INSTRUMENT_SYMBOLS = ["NQ", "ES"] as const;
+export const INSTRUMENT_SYMBOLS = ["NQ.c.0", "ES.c.0"] as const;
 export type InstrumentSymbol = (typeof INSTRUMENT_SYMBOLS)[number];
+
+// Databento continuous-contract symbols (DB-canonical) -> short display labels.
+const INSTRUMENT_LABELS: Record<InstrumentSymbol, string> = {
+  "NQ.c.0": "NQ",
+  "ES.c.0": "ES",
+};
 
 interface InstrumentSelectorProps {
   value: InstrumentSymbol;
@@ -20,7 +26,7 @@ export function InstrumentSelector({ value, onChange, className }: InstrumentSel
       <SelectContent>
         {INSTRUMENT_SYMBOLS.map((symbol) => (
           <SelectItem key={symbol} value={symbol}>
-            {symbol}
+            {INSTRUMENT_LABELS[symbol]}
           </SelectItem>
         ))}
       </SelectContent>

@@ -27,7 +27,7 @@ function defaultDates() {
 }
 
 export default function EventsPage() {
-  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ");
+  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ.c.0");
   const [timeframe, setTimeframe] = useState<Timeframe>("15m");
   const [eventType, setEventType] = useState<EventExplorerType | "all">("all");
   const initialDates = defaultDates();

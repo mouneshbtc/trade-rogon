@@ -32,7 +32,7 @@ function defaultDates() {
 }
 
 export default function PipelinePage() {
-  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ");
+  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ.c.0");
   const [timeframe, setTimeframe] = useState<Timeframe>("15m");
   const initialDates = defaultDates();
   const [startDate, setStartDate] = useState(initialDates.start);

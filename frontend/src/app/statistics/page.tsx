@@ -57,7 +57,7 @@ function groupByDay(timestamps: string[]): HistogramPoint[] {
 }
 
 export default function StatisticsPage() {
-  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ");
+  const [symbol, setSymbol] = useState<InstrumentSymbol>("NQ.c.0");
   const [timeframe, setTimeframe] = useState<Timeframe>("15m");
   const initialDates = defaultDates();
   const [startDate, setStartDate] = useState(initialDates.start);

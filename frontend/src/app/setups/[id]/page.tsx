@@ -57,10 +57,10 @@ export default function SetupDetailPage() {
     queryFn: () => getTradeSetup(setupId),
   });
 
-  const { data: nq } = useQuery({ queryKey: ["instrument", "NQ"], queryFn: () => getInstrument("NQ") });
-  const { data: es } = useQuery({ queryKey: ["instrument", "ES"], queryFn: () => getInstrument("ES") });
+  const { data: nq } = useQuery({ queryKey: ["instrument", "NQ.c.0"], queryFn: () => getInstrument("NQ.c.0") });
+  const { data: es } = useQuery({ queryKey: ["instrument", "ES.c.0"], queryFn: () => getInstrument("ES.c.0") });
 
-  const symbol = setup ? (nq?.id === setup.instrument_id ? "NQ" : es?.id === setup.instrument_id ? "ES" : null) : null;
+  const symbol = setup ? (nq?.id === setup.instrument_id ? "NQ.c.0" : es?.id === setup.instrument_id ? "ES.c.0" : null) : null;
   const timeframe = (setup?.timeframe ?? "15m") as import("@/types").Timeframe;
 
   const window_ = setup
