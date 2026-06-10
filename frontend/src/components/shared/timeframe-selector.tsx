@@ -3,7 +3,7 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Timeframe } from "@/types";
 
-const TIMEFRAMES: Timeframe[] = ["15m"];
+const TIMEFRAMES: Timeframe[] = ["5m", "15m", "1h", "4h", "1d"];
 
 interface TimeframeSelectorProps {
   value: Timeframe;
