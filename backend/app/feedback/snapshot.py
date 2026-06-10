@@ -9,6 +9,7 @@ without being misled by anything that has changed since.
 
 import uuid
 from datetime import timedelta
+from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +19,7 @@ from app.market_data.repository import BarRepository, InstrumentRepository
 from app.narrative_engine.repository import NarrativeRepository
 from app.schemas.annotation import AnnotationCoordinates
 from app.schemas.feedback import MarketSnapshot
-from app.schemas.market_data import BarOut
+from app.schemas.market_data import BarOut, Timeframe
 from app.visual_validation.repository import AnnotationRepository
 
 SNAPSHOT_PADDING_BARS = 50
@@ -59,11 +60,12 @@ class MarketSnapshotService:
         instrument = await self._instruments.get_by_id(db, annotation.instrument_id)
         symbol = instrument.symbol if instrument else ""
 
-        minutes = TIMEFRAME_MINUTES[annotation.timeframe]
+        timeframe = cast(Timeframe, annotation.timeframe)
+        minutes = TIMEFRAME_MINUTES[timeframe]
         padding = timedelta(minutes=minutes * SNAPSHOT_PADDING_BARS)
         start = coordinates.start_ts - padding
         end = (coordinates.end_ts or coordinates.start_ts) + padding
-        bars = await self._bars.get_range(db, annotation.instrument_id, annotation.timeframe, start, end)
+        bars = await self._bars.get_range(db, annotation.instrument_id, timeframe, start, end)
 
         narrative_outcome = None
         narrative_final_stage = None
@@ -83,7 +85,7 @@ class MarketSnapshotService:
                 BarOut(
                     instrument_id=annotation.instrument_id,
                     symbol=symbol,
-                    timeframe=annotation.timeframe,
+                    timeframe=timeframe,
                     ts=row.ts,
                     open=float(row.open),
                     high=float(row.high),

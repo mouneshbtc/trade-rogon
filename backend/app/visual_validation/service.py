@@ -8,6 +8,7 @@ feedback UI) can react without polling.
 
 import uuid
 from datetime import timedelta
+from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +24,7 @@ from app.schemas.annotation import (
     ChartPayload,
     DualChartPayload,
 )
-from app.schemas.market_data import BarOut
+from app.schemas.market_data import BarOut, Timeframe
 from app.visual_validation.repository import AnnotationRepository
 
 # Bars of padding rendered either side of the annotated range so the trader has
@@ -104,17 +105,18 @@ class ChartOverlayService:
             symbol = instrument.symbol if instrument else ""
 
         coordinates = AnnotationCoordinates.model_validate(annotation.coordinates)
-        window_start, window_end = self._context_window(coordinates, annotation.timeframe)
+        timeframe = cast(Timeframe, annotation.timeframe)
+        window_start, window_end = self._context_window(coordinates, timeframe)
 
-        rows = await self._bars.get_range(db, instrument_id, annotation.timeframe, window_start, window_end)
+        rows = await self._bars.get_range(db, instrument_id, timeframe, window_start, window_end)
         return ChartPayload(
             symbol=symbol,
-            timeframe=annotation.timeframe,
+            timeframe=timeframe,
             bars=[
                 BarOut(
                     instrument_id=instrument_id,
                     symbol=symbol,
-                    timeframe=annotation.timeframe,
+                    timeframe=timeframe,
                     ts=row.ts,
                     open=float(row.open),
                     high=float(row.high),
@@ -128,7 +130,7 @@ class ChartOverlayService:
         )
 
     @staticmethod
-    def _context_window(coordinates: AnnotationCoordinates, timeframe: str):
+    def _context_window(coordinates: AnnotationCoordinates, timeframe: Timeframe):
         minutes = TIMEFRAME_MINUTES[timeframe]
         padding = timedelta(minutes=minutes * CONTEXT_PADDING_BARS)
         start = coordinates.start_ts - padding

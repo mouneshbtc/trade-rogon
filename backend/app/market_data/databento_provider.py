@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 import databento as db
+import pandas as pd
 import structlog
 
 from app.config import settings
@@ -73,10 +74,11 @@ class DatabentoProvider(MarketDataProvider):
         async def _on_record(record: db.DBNRecord) -> None:
             if not isinstance(record, db.OHLCVMsg):
                 return
+            assert record.pretty_ts_event is not None
             bar = NormalizedBar(
                 symbol=symbol,
                 timeframe=DATABENTO_BASE_TIMEFRAME,
-                ts=record.pretty_ts_event.to_pydatetime(),
+                ts=pd.Timestamp(record.pretty_ts_event).to_pydatetime(),
                 open=record.pretty_open,
                 high=record.pretty_high,
                 low=record.pretty_low,

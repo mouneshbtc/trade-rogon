@@ -9,7 +9,7 @@ all "speak" identically to the overlay/visual-validation layer.
 import uuid
 from datetime import datetime
 
-from app.schemas.annotation import AnnotationCoordinates, AnnotationCreate
+from app.schemas.annotation import AnnotationCoordinates, AnnotationCreate, AnnotationKind
 from app.schemas.market_data import Timeframe
 
 
@@ -68,7 +68,7 @@ class AnnotationBuilder:
             reason_text,
         )
 
-    def _build(self, kind: str, coordinates: AnnotationCoordinates, reason_text: str) -> AnnotationCreate:
+    def _build(self, kind: AnnotationKind, coordinates: AnnotationCoordinates, reason_text: str) -> AnnotationCreate:
         return AnnotationCreate(
             narrative_run_id=self._narrative_run_id,
             concept_name=self._concept_name,

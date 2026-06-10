@@ -1,7 +1,9 @@
 from functools import lru_cache
+from typing import Annotated
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from pydantic import computed_field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import computed_field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -16,23 +18,49 @@ class Settings(BaseSettings):
     # ── Core ─────────────────────────────────────────────────────────────────
     env: str = "development"
     app_base_url: str = "http://localhost:3000"
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://localhost:3001"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _split_cors_origins(cls, v: object) -> object:
+        """Allow CORS_ORIGINS as a comma-separated string (e.g. "a,b") in
+        addition to a JSON array — pydantic-settings' default env format."""
+        if isinstance(v, str):
+            stripped = v.strip()
+            if stripped.startswith("["):
+                import json
+
+                return json.loads(stripped)
+            return [origin.strip() for origin in stripped.split(",") if origin.strip()]
+        return v
 
     # ── Database ─────────────────────────────────────────────────────────────
     # Store as plain postgresql:// — driver prefixes are computed below
     database_url: str = "postgresql://traderogon:traderogon@localhost:5432/traderogon"
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def async_database_url(self) -> str:
         url = self.database_url
-        if "+asyncpg" in url:
-            return url
         if "+psycopg2" in url:
-            return url.replace("+psycopg2", "+asyncpg")
-        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            url = url.replace("+psycopg2", "+asyncpg")
+        elif "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-    @computed_field
+        # asyncpg's connect() accepts `ssl=`, not `sslmode=`. Neon's connection
+        # strings always include `?sslmode=require`, which psycopg2 (used for
+        # `sync_database_url`/Alembic) accepts natively but asyncpg rejects with
+        # a TypeError. Rename the param, preserving its value, for the async URL only.
+        split = urlsplit(url)
+        query = parse_qsl(split.query, keep_blank_values=True)
+        if any(key == "sslmode" for key, _ in query):
+            query = [("ssl" if key == "sslmode" else key, value) for key, value in query]
+            split = split._replace(query=urlencode(query))
+            url = urlunsplit(split)
+
+        return url
+
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def sync_database_url(self) -> str:
         url = self.database_url

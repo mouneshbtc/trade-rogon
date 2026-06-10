@@ -10,6 +10,13 @@ Timeframe = Literal["1m", "5m", "15m", "1h", "4h", "1d", "1w"]
 TIMEFRAME_ORDER: list[Timeframe] = ["1m", "5m", "15m", "1h", "4h", "1d", "1w"]
 
 
+class InstrumentOut(BaseModel):
+    id: uuid.UUID
+    symbol: str
+
+    model_config = {"from_attributes": True}
+
+
 class BarOut(BaseModel):
     instrument_id: uuid.UUID
     symbol: str

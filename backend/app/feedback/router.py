@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from typing import cast
 
 from fastapi import APIRouter, HTTPException, Query, status
 
@@ -56,7 +57,7 @@ async def submit_feedback(
     return FeedbackOut(
         id=entry.id,
         annotation_id=entry.annotation_id,
-        verdict=entry.verdict,
+        verdict=cast(Verdict, entry.verdict),
         notes=entry.notes,
         snapshot=snapshot,
         submitted_at=entry.submitted_at,
@@ -85,7 +86,7 @@ async def list_feedback(
         FeedbackOut(
             id=row.id,
             annotation_id=row.annotation_id,
-            verdict=row.verdict,
+            verdict=cast(Verdict, row.verdict),
             notes=row.notes,
             snapshot=MarketSnapshot.model_validate(row.snapshot),
             submitted_at=row.submitted_at,

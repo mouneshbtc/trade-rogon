@@ -22,6 +22,7 @@ def configure_logging() -> None:
         structlog.processors.StackInfoRenderer(),
     ]
 
+    renderer: structlog.processors.JSONRenderer | structlog.dev.ConsoleRenderer
     if is_prod:
         renderer = structlog.processors.JSONRenderer()
     else:

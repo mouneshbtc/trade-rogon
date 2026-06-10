@@ -18,7 +18,7 @@ class MarketDataProvider(ABC):
     """Source of normalized OHLCV bars for a symbol, historical or live."""
 
     @abstractmethod
-    async def get_historical(
+    def get_historical(
         self, symbol: str, timeframe: Timeframe, start: datetime, end: datetime
     ) -> AsyncIterator[NormalizedBar]:
         """Yield closed bars for [start, end), in chronological order."""

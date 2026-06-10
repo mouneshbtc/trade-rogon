@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.event_bus import EventBus
 from app.core.events import BarClosedEvent
 from app.market_data.aggregator import TIMEFRAME_MINUTES, BarAggregator
+from app.market_data.contract_roll import ContractRollManager
 from app.market_data.provider import MarketDataProvider
 from app.market_data.repository import BarRepository, InstrumentRepository
 from app.schemas.market_data import TIMEFRAME_ORDER, NormalizedBar, Timeframe
@@ -33,12 +34,14 @@ class MarketDataService:
         instrument_repository: InstrumentRepository | None = None,
         bar_repository: BarRepository | None = None,
         aggregator: BarAggregator | None = None,
+        roll_manager: ContractRollManager | None = None,
     ) -> None:
         self._provider = provider
         self._event_bus = event_bus
         self._instruments = instrument_repository or InstrumentRepository()
         self._bars = bar_repository or BarRepository()
         self._aggregator = aggregator or BarAggregator()
+        self._roll_manager = roll_manager or ContractRollManager()
 
     async def ingest_historical_range(
         self,
@@ -62,6 +65,17 @@ class MarketDataService:
         base_bars: list[NormalizedBar] = [
             bar async for bar in self._provider.get_historical(symbol, BASE_TIMEFRAME, start, end)
         ]
+
+        for roll in self._roll_manager.detect_candidate_rolls(base_bars):
+            logger.warning(
+                "contract_roll_candidate",
+                symbol=roll.symbol,
+                ts=roll.ts.isoformat(),
+                previous_close=roll.previous_close,
+                gap_open=roll.gap_open,
+                gap_pct=round(roll.gap_pct, 4),
+            )
+
         written: dict[Timeframe, int] = {}
         written[BASE_TIMEFRAME] = await self._persist_and_publish(db, instrument.id, symbol, base_bars)
 

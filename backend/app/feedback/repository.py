@@ -80,7 +80,7 @@ class FeedbackRepository:
             stmt = stmt.where(Annotation.concept_definition_version == definition_version)
 
         result = await db.execute(stmt)
-        counts = dict(result.all())
+        counts: dict[str, int] = dict(result.tuples().all())
         correct = counts.get("correct", 0)
         incorrect = counts.get("incorrect", 0)
         partially_correct = counts.get("partially_correct", 0)
