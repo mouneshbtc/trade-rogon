@@ -25,6 +25,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import structlog
+from databento.common.error import BentoClientError
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -69,9 +70,23 @@ async def ingest(symbol: str, months: int) -> None:
 
     totals: dict[str, int] = {}
     for chunk_start, chunk_end in chunks:
-        async with AsyncSessionLocal() as db:
-            written = await service.ingest_historical_range(db, symbol, chunk_start, chunk_end)
-            await db.commit()
+        try:
+            async with AsyncSessionLocal() as db:
+                written = await service.ingest_historical_range(db, symbol, chunk_start, chunk_end)
+                await db.commit()
+        except BentoClientError as exc:
+            if "dataset_unavailable_range" in str(exc):
+                # Databento's licensed/available range can lag "now" by hours;
+                # treat this as the practical end of available history.
+                logger.warning(
+                    "chunk_unavailable_stopping",
+                    symbol=symbol,
+                    chunk_start=chunk_start.isoformat(),
+                    chunk_end=chunk_end.isoformat(),
+                    error=str(exc),
+                )
+                break
+            raise
         for timeframe, count in written.items():
             totals[timeframe] = totals.get(timeframe, 0) + count
         logger.info(
