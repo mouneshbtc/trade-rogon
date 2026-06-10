@@ -30,6 +30,10 @@ class InstrumentRepository:
 
 
 class BarRepository:
+    # asyncpg rejects statements with more than 32767 bound parameters; each
+    # row binds 9 columns, so batch inserts to stay under that limit.
+    _UPSERT_BATCH_SIZE = 3000
+
     async def upsert_many(
         self, db: AsyncSession, instrument_id: uuid.UUID, bars: list[NormalizedBar]
     ) -> int:
@@ -51,18 +55,20 @@ class BarRepository:
             }
             for bar in bars
         ]
-        stmt = pg_insert(Bar).values(rows)
-        stmt = stmt.on_conflict_do_update(
-            constraint="uq_bar_instrument_tf_ts",
-            set_={
-                "open": stmt.excluded.open,
-                "high": stmt.excluded.high,
-                "low": stmt.excluded.low,
-                "close": stmt.excluded.close,
-                "volume": stmt.excluded.volume,
-            },
-        )
-        await db.execute(stmt)
+        for i in range(0, len(rows), self._UPSERT_BATCH_SIZE):
+            chunk = rows[i : i + self._UPSERT_BATCH_SIZE]
+            stmt = pg_insert(Bar).values(chunk)
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_bar_instrument_tf_ts",
+                set_={
+                    "open": stmt.excluded.open,
+                    "high": stmt.excluded.high,
+                    "low": stmt.excluded.low,
+                    "close": stmt.excluded.close,
+                    "volume": stmt.excluded.volume,
+                },
+            )
+            await db.execute(stmt)
         await db.flush()
         return len(rows)
 
