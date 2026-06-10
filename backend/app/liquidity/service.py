@@ -23,6 +23,28 @@ _CONCEPT_NAME = "liquidity"
 _DAILY_TIMEFRAME: Timeframe = "1d"
 
 
+def _dedup_pools(pools: list[PoolFact]) -> list[PoolFact]:
+    """Collapse pools sharing (instrument_id, timeframe, pool_type, ts, price).
+
+    `detect_eqh_eql_pools` persists all qualifying swing pairs independently,
+    so a swing cluster of 3+ can produce multiple pairs that resolve to the
+    identical price/ts level — which `uq_liquidity_pool` treats as one row.
+    Merge their `source_swing_event_ids` into the first-seen pool.
+    """
+    merged: dict[tuple[uuid.UUID, str, str, datetime, Decimal], PoolFact] = {}
+    for pool in pools:
+        key = (pool.instrument_id, pool.timeframe, pool.pool_type, pool.ts, pool.price)
+        existing = merged.get(key)
+        if existing is None:
+            merged[key] = pool
+        elif pool.source_swing_event_ids:
+            existing_ids = existing.source_swing_event_ids or []
+            existing.source_swing_event_ids = existing_ids + [
+                event_id for event_id in pool.source_swing_event_ids if event_id not in existing_ids
+            ]
+    return list(merged.values())
+
+
 class LiquidityService:
     def __init__(
         self,
@@ -106,6 +128,8 @@ class LiquidityService:
                 min_cluster_size=min_cluster_size,
             )
             all_pools.extend(eqh_eql)
+
+        all_pools = _dedup_pools(all_pools)
 
         # ── Phase 3: Raid + outcome detection ───────────────────────────────
         working_bars = await self._bar_repo.get_range(db, instrument_id, timeframe, start, end)
