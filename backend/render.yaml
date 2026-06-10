@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: trade-rogon-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -e .
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.13
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: DATABENTO_API_KEY
+        sync: false
+      - key: DATABENTO_NQ_SYMBOL
+        value: NQ.c.0
+      - key: DATABENTO_ES_SYMBOL
+        value: ES.c.0
+      - key: DATABENTO_DATASET
+        value: GLBX.MDP3
+      - key: SENTRY_DSN
+        sync: false
